@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scratchpad</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Feather icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: transparent; }
+    /* Hide scrollbar for a cleaner look */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans h-screen flex flex-col selection:bg-blue-200">
+  
+  <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-2">
+      <i data-feather="message-square" class="w-5 h-5 text-blue-600"></i>
+      <h1 class="text-base font-bold">Comm Scratchpad</h1>
+    </div>
+    <div class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">⌃⇧S to toggle</div>
+  </header>
+
+  <div class="p-3 bg-white border-b border-gray-100 shrink-0">
+    <textarea
+      id="inputArea"
+      placeholder="“거시적으로는 이해했는데 디테일 들어가니까 헷갈렸다고 말하고 싶었음”"
+      class="w-full h-24 text-sm resize-none outline-none placeholder:text-gray-300 bg-transparent"
+    ></textarea>
+    <div class="flex items-center justify-between mt-2">
+      <span class="text-xs text-gray-400">Press <kbd class="bg-gray-100 px-1 rounded border border-gray-200">Enter</kbd> to save</span>
+      <button
+        id="saveBtn"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full font-medium text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+      >
+        Save <i data-feather="send" class="w-3 h-3"></i>
+      </button>
+    </div>
+  </div>
+
+  <main class="flex-1 overflow-y-auto p-3" id="notesList">
+    <!-- Notes injected here via JS -->
+  </main>
+
+  <script>
+    feather.replace();
+
+    const inputArea = document.getElementById('inputArea');
+    const saveBtn = document.getElementById('saveBtn');
+    const notesList = document.getElementById('notesList');
+
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+
+    const STORAGE_FILE = path.join(os.homedir(), '.comm-scratchpad.json');
+
+    function getNotes() {
+      try {
+        if (!fs.existsSync(STORAGE_FILE)) {
+          return [];
+        }
+        const data = fs.readFileSync(STORAGE_FILE, 'utf8');
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        console.error('Failed to read notes:', e);
+        return [];
+      }
+    }
+
+    function saveNote(text) {
+      const notes = getNotes();
+      const newNote = {
+        id: crypto.randomUUID(),
+        text: text,
+        timestamp: Date.now()
+      };
+      notes.unshift(newNote);
+      fs.writeFileSync(STORAGE_FILE, JSON.stringify(notes, null, 2), 'utf8');
+      renderNotes();
+    }
+
+    function deleteNote(id) {
+      const notes = getNotes();
+      const filtered = notes.filter(n => n.id !== id);
+      fs.writeFileSync(STORAGE_FILE, JSON.stringify(filtered, null, 2), 'utf8');
+      renderNotes();
+    }
+
+    function renderNotes() {
+      const notes = getNotes();
+      
+      if (notes.length === 0) {
+        notesList.innerHTML = `
+          <div class="text-center py-10 text-gray-400 flex flex-col items-center">
+            <i data-feather="inbox" class="w-8 h-8 mb-2 opacity-50"></i>
+            <p class="text-sm">No moments captured yet.</p>
+          </div>
+        `;
+        feather.replace();
+        return;
+      }
+
+      notesList.innerHTML = notes.map(note => `
+        <div class="bg-white p-3 mb-3 rounded-xl border border-gray-200 shadow-sm group relative">
+          <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">${note.text}</p>
+          <div class="flex items-center justify-between mt-2 text-[10px] text-gray-400">
+            <div class="flex items-center gap-1">
+              <i data-feather="clock" class="w-3 h-3"></i>
+              ${new Date(note.timestamp).toLocaleString()}
+            </div>
+            <button 
+              onclick="deleteNote('${note.id}')"
+              class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-500 rounded"
+              title="Delete"
+            >
+              <i data-feather="trash-2" class="w-3 h-3"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      feather.replace();
+    }
+
+    // Event Listeners
+    saveBtn.addEventListener('click', () => {
+      if (!inputArea.value.trim()) return;
+      saveNote(inputArea.value.trim());
+      inputArea.value = '';
+    });
+
+    inputArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        saveBtn.click();
+      }
+    });
+
+    // Auto-focus input when window comes to foreground
+    window.addEventListener('focus', () => {
+      setTimeout(() => inputArea.focus(), 50);
+    });
+
+    // Initial render
+    renderNotes();
+    
+    // Focus immediately on load
+    inputArea.focus();
+  </script>
+</body>
+</html>
