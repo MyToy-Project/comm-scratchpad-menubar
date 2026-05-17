@@ -190,6 +190,11 @@
       renderNotes();
     }
 
+    function autoResize(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
     function renderNotes() {
       const { notes } = getData();
       
@@ -212,7 +217,7 @@
           <div class="bg-white p-4 mb-4 rounded-2xl border border-gray-200 shadow-sm group">
             <div class="flex justify-between items-start mb-2">
               <textarea
-                oninput="updateNoteText('${note.id}', this.value); this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
+                oninput="updateNoteText('${note.id}', this.value); autoResize(this);"
                 class="text-sm text-gray-800 leading-relaxed flex-1 bg-transparent outline-none resize-none border-b border-transparent focus:border-gray-300 p-0 m-0 overflow-hidden"
               >${note.text}</textarea>
               <button 
@@ -274,8 +279,8 @@
                   </div>
                   <textarea
                     placeholder="Type your recap here..."
-                    oninput="updateRecap('${note.id}', '${recap.id}', this.value)"
-                    class="w-full bg-transparent text-xs outline-none resize-none placeholder:text-gray-300 min-h-[40px]"
+                    oninput="updateRecap('${note.id}', '${recap.id}', this.value); autoResize(this);"
+                    class="w-full bg-transparent text-xs outline-none resize-none placeholder:text-gray-300 min-h-[40px] overflow-hidden"
                   >${recap.text}</textarea>
                 </div>
               `).join('')}
@@ -285,11 +290,10 @@
       }).join('');
       feather.replace();
       
-      // Auto-resize all note textareas
-      document.querySelectorAll('main textarea').forEach(ta => {
-        ta.style.height = 'auto';
-        ta.style.height = ta.scrollHeight + 'px';
-      });
+      // Auto-resize all textareas after DOM is painted
+      setTimeout(() => {
+        document.querySelectorAll('textarea').forEach(autoResize);
+      }, 0);
     }
 
     // Event Listeners
