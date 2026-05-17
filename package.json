@@ -2,10 +2,12 @@
   "name": "comm-scratchpad-menubar",
   "version": "1.0.0",
   "description": "",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "build": "tsc",
+    "start": "npm run build && electron .",
+    "watch": "tsc -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,8 @@
     "menubar": "^9.5.2"
   },
   "devDependencies": {
-    "electron": "^42.0.1"
+    "@types/node": "^25.8.0",
+    "electron": "^42.0.1",
+    "typescript": "^6.0.3"
   }
 }

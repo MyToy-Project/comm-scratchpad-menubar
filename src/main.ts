@@ -1,10 +1,10 @@
-const { app, globalShortcut } = require('electron');
-const { menubar } = require('menubar');
-const path = require('path');
+import { app, globalShortcut } from 'electron';
+import { menubar } from 'menubar';
+import * as path from 'path';
 
 app.on('ready', () => {
   const mb = menubar({
-    index: `file://${path.join(__dirname, 'index.html')}`,
+    index: `file://${path.join(__dirname, '..', 'index.html')}`,
     browserWindow: {
       width: 450,
       height: 650,
@@ -23,7 +23,7 @@ app.on('ready', () => {
     globalShortcut.register('Control+Shift+S', () => {
       if (mb.window && mb.window.isVisible()) {
         mb.hideWindow();
-      } else {
+      } else if (mb.window) {
         mb.showWindow();
         mb.window.focus();
       }
@@ -32,6 +32,8 @@ app.on('ready', () => {
 
   // Force correct position AFTER the menubar library has already placed the window
   mb.on('after-show', () => {
+    if (!mb.window || !mb.tray) return;
+    
     const trayBounds = mb.tray.getBounds();
     const { width } = mb.window.getBounds();
     const x = Math.round(trayBounds.x + trayBounds.width / 2 - width / 2);

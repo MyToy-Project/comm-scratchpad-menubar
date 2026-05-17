@@ -1,20 +1,38 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { clipboard } = require('electron');
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { clipboard } from 'electron';
+
+// Type definitions
+interface Recap {
+  id: string;
+  name: string;
+  text: string;
+}
+
+interface Note {
+  id: string;
+  text: string;
+  timestamp: number;
+  recaps: Recap[];
+}
+
+interface StorageData {
+  notes: Note[];
+}
+
+declare const feather: any;
 
 const STORAGE_FILE = path.join(os.homedir(), '.comm-scratchpad.json');
 
-const inputArea = document.getElementById('inputArea');
-const saveBtn = document.getElementById('saveBtn');
-const notesList = document.getElementById('notesList');
+let inputArea: HTMLTextAreaElement;
+let saveBtn: HTMLButtonElement;
+let notesList: HTMLElement;
 
-const expandedNotes = new Set();
-const copySelectors = new Set(); // Tracks which notes have the copy selector open
+const expandedNotes = new Set<string>();
+const copySelectors = new Set<string>();
 
-feather.replace();
-
-function getData() {
+function getData(): StorageData {
   try {
     if (!fs.existsSync(STORAGE_FILE)) {
       return { notes: [] };
@@ -23,7 +41,7 @@ function getData() {
     if (!data) return { notes: [] };
     
     const parsed = JSON.parse(data);
-    let notes = [];
+    let notes: Note[] = [];
     
     if (Array.isArray(parsed)) {
       notes = parsed;
@@ -36,7 +54,7 @@ function getData() {
         ...n,
         recaps: (n.recaps || []).map(r => ({
           ...r,
-          name: r.name || r.title || ''
+          name: r.name || (r as any).title || ''
         }))
       }))
     };
@@ -46,7 +64,7 @@ function getData() {
   }
 }
 
-function saveData(data) {
+function saveData(data: StorageData): void {
   try {
     fs.writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2), 'utf8');
   } catch (e) {
@@ -54,9 +72,9 @@ function saveData(data) {
   }
 }
 
-function saveNote(text) {
+function saveNote(text: string): void {
   const data = getData();
-  const newNote = {
+  const newNote: Note = {
     id: crypto.randomUUID(),
     text: text,
     timestamp: Date.now(),
@@ -67,7 +85,7 @@ function saveNote(text) {
   renderNotes();
 }
 
-function updateNoteText(id, text) {
+function updateNoteText(id: string, text: string): void {
   const data = getData();
   const note = data.notes.find(n => n.id === id);
   if (note) {
@@ -76,7 +94,7 @@ function updateNoteText(id, text) {
   }
 }
 
-function deleteNote(id) {
+function deleteNote(id: string): void {
   if (!confirm('Are you sure you want to delete this note?')) return;
   const data = getData();
   data.notes = data.notes.filter(n => n.id !== id);
@@ -84,7 +102,7 @@ function deleteNote(id) {
   renderNotes();
 }
 
-function addRecap(noteId) {
+function addRecap(noteId: string): void {
   const data = getData();
   const note = data.notes.find(n => n.id === noteId);
   if (note) {
@@ -99,7 +117,7 @@ function addRecap(noteId) {
   }
 }
 
-function updateRecap(noteId, recapId, text) {
+function updateRecap(noteId: string, recapId: string, text: string): void {
   const data = getData();
   const note = data.notes.find(n => n.id === noteId);
   if (note) {
@@ -111,7 +129,7 @@ function updateRecap(noteId, recapId, text) {
   }
 }
 
-function updateRecapName(noteId, recapId, name) {
+function updateRecapName(noteId: string, recapId: string, name: string): void {
   const data = getData();
   const note = data.notes.find(n => n.id === noteId);
   if (note) {
@@ -123,7 +141,7 @@ function updateRecapName(noteId, recapId, name) {
   }
 }
 
-function deleteRecap(noteId, recapId) {
+function deleteRecap(noteId: string, recapId: string): void {
   if (!confirm('Delete this recap?')) return;
   const data = getData();
   const note = data.notes.find(n => n.id === noteId);
@@ -134,7 +152,7 @@ function deleteRecap(noteId, recapId) {
   }
 }
 
-function toggleRecaps(noteId) {
+function toggleRecaps(noteId: string): void {
   if (expandedNotes.has(noteId)) {
     expandedNotes.delete(noteId);
   } else {
@@ -143,7 +161,7 @@ function toggleRecaps(noteId) {
   renderNotes();
 }
 
-function toggleCopySelector(noteId) {
+function toggleCopySelector(noteId: string): void {
   if (copySelectors.has(noteId)) {
     copySelectors.delete(noteId);
   } else {
@@ -152,15 +170,17 @@ function toggleCopySelector(noteId) {
   renderNotes();
 }
 
-function executeCopy(noteId) {
+function executeCopy(noteId: string): void {
   const noteElement = document.getElementById(`note-${noteId}`);
-  const checkboxes = noteElement.querySelectorAll('.copy-checkbox:checked');
+  if (!noteElement) return;
+
+  const checkboxes = noteElement.querySelectorAll('.copy-checkbox:checked') as NodeListOf<HTMLInputElement>;
   
   const data = getData();
   const note = data.notes.find(n => n.id === noteId);
   if (!note) return;
 
-  let copyParts = [];
+  let copyParts: string[] = [];
   
   checkboxes.forEach(cb => {
     const type = cb.dataset.type;
@@ -181,8 +201,7 @@ function executeCopy(noteId) {
     const finalContent = copyParts.join('\n\n---\n\n');
     clipboard.writeText(finalContent);
     
-    // Show success feedback
-    const btn = noteElement.querySelector('.copy-execute-btn');
+    const btn = noteElement.querySelector('.copy-execute-btn') as HTMLButtonElement;
     const originalText = btn.innerHTML;
     btn.innerHTML = 'Copied! <i data-feather="check" class="w-3 h-3"></i>';
     btn.classList.replace('bg-blue-600', 'bg-green-600');
@@ -198,24 +217,25 @@ function executeCopy(noteId) {
   }
 }
 
-function autoResize(textarea) {
+function autoResize(textarea: HTMLTextAreaElement): void {
   textarea.style.height = 'auto';
   textarea.style.height = textarea.scrollHeight + 'px';
 }
 
-window.renderNotes = renderNotes;
-window.deleteNote = deleteNote;
-window.addRecap = addRecap;
-window.updateNoteText = updateNoteText;
-window.updateRecap = updateRecap;
-window.updateRecapName = updateRecapName;
-window.deleteRecap = deleteRecap;
-window.toggleRecaps = toggleRecaps;
-window.toggleCopySelector = toggleCopySelector;
-window.executeCopy = executeCopy;
-window.autoResize = autoResize;
+// Expose functions to window for onclick handlers
+(window as any).deleteNote = deleteNote;
+(window as any).addRecap = addRecap;
+(window as any).updateNoteText = updateNoteText;
+(window as any).updateRecap = updateRecap;
+(window as any).updateRecapName = updateRecapName;
+(window as any).deleteRecap = deleteRecap;
+(window as any).toggleRecaps = toggleRecaps;
+(window as any).toggleCopySelector = toggleCopySelector;
+(window as any).executeCopy = executeCopy;
+(window as any).autoResize = autoResize;
 
-function renderNotes() {
+function renderNotes(): void {
+  if (!notesList) return;
   const { notes } = getData();
   
   if (notes.length === 0) {
@@ -353,28 +373,36 @@ function renderNotes() {
   
   // Auto-resize all textareas after DOM is painted
   setTimeout(() => {
-    document.querySelectorAll('textarea').forEach(autoResize);
+    document.querySelectorAll('textarea').forEach(ta => autoResize(ta as HTMLTextAreaElement));
   }, 0);
 }
 
-// Event Listeners
-saveBtn.addEventListener('click', () => {
-  if (!inputArea.value.trim()) return;
-  saveNote(inputArea.value.trim());
-  inputArea.value = '';
-});
+document.addEventListener('DOMContentLoaded', () => {
+  inputArea = document.getElementById('inputArea') as HTMLTextAreaElement;
+  saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
+  notesList = document.getElementById('notesList') as HTMLElement;
 
-inputArea.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    saveBtn.click();
-  }
-});
+  feather.replace();
 
-window.addEventListener('focus', () => {
-  setTimeout(() => inputArea.focus(), 50);
-});
+  // Event Listeners
+  saveBtn.addEventListener('click', () => {
+    if (!inputArea.value.trim()) return;
+    saveNote(inputArea.value.trim());
+    inputArea.value = '';
+  });
 
-// Initial render
-renderNotes();
-inputArea.focus();
+  inputArea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      saveBtn.click();
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    setTimeout(() => inputArea.focus(), 50);
+  });
+
+  // Initial render
+  renderNotes();
+  inputArea.focus();
+});
