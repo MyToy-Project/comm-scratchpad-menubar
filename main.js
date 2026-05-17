@@ -6,8 +6,8 @@ app.on('ready', () => {
   const mb = menubar({
     index: `file://${path.join(__dirname, 'index.html')}`,
     browserWindow: {
-      width: 400,
-      height: 500,
+      width: 450,
+      height: 650,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
