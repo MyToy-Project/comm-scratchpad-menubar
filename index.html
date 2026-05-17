@@ -83,7 +83,7 @@
             ...n,
             recaps: (n.recaps || []).map(r => ({
               ...r,
-              name: r.name || r.title || '' // Migration from old 'title' field
+              name: r.name || r.title || ''
             }))
           }))
         };
@@ -112,6 +112,15 @@
       data.notes.unshift(newNote);
       saveData(data);
       renderNotes();
+    }
+
+    function updateNoteText(id, text) {
+      const data = getData();
+      const note = data.notes.find(n => n.id === id);
+      if (note) {
+        note.text = text;
+        saveData(data);
+      }
     }
 
     function deleteNote(id) {
@@ -202,10 +211,13 @@
         return `
           <div class="bg-white p-4 mb-4 rounded-2xl border border-gray-200 shadow-sm group">
             <div class="flex justify-between items-start mb-2">
-              <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed flex-1">${note.text}</p>
+              <textarea
+                oninput="updateNoteText('${note.id}', this.value); this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"
+                class="text-sm text-gray-800 leading-relaxed flex-1 bg-transparent outline-none resize-none border-b border-transparent focus:border-gray-300 p-0 m-0 overflow-hidden"
+              >${note.text}</textarea>
               <button 
                 onclick="deleteNote('${note.id}')"
-                class="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-red-500 rounded"
+                class="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-red-500 rounded ml-2"
                 title="Delete Note"
               >
                 <i data-feather="trash-2" class="w-3.5 h-3.5"></i>
@@ -272,6 +284,12 @@
         `;
       }).join('');
       feather.replace();
+      
+      // Auto-resize all note textareas
+      document.querySelectorAll('main textarea').forEach(ta => {
+        ta.style.height = 'auto';
+        ta.style.height = ta.scrollHeight + 'px';
+      });
     }
 
     // Event Listeners
