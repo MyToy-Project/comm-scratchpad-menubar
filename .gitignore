@@ -3,3 +3,9 @@ dist/
 out/
 .DS_Store
 *.log
+
+# IDE Files
+.idea/
+.vscode/
+*.swp
+*.swo
