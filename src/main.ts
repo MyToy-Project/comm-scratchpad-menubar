@@ -20,6 +20,10 @@ app.on('ready', () => {
   mb.on('ready', () => {
     console.log('Menubar app is ready.');
 
+    mb.window?.on('blur', () => {
+      mb.hideWindow();
+    });
+
     globalShortcut.register('Control+Shift+S', () => {
       if (mb.window && mb.window.isVisible()) {
         mb.hideWindow();
